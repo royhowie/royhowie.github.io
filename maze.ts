@@ -25,7 +25,7 @@ class Cell {
 
     public readonly paths: Set<Direction> = new Set([Direction.UNVISITED]);
 
-    constructor(public readonly location: number) {}
+    constructor(public readonly x: number, public readonly y: number) {}
 
     add(direction: Direction): void {
         this.paths.delete(Direction.UNVISITED);
@@ -35,42 +35,21 @@ class Cell {
     visited(): boolean {
         return !this.paths.has(Direction.UNVISITED);
     }
-
-    x(cols: number): number {
-        return (this.location / cols) | 0;
-    }
-
-    y(cols: number): number {
-        return this.location % cols;
-    }
 }
 
 class Grid {
 
     public readonly grid: Cell[] = [];
-    private readonly path: number[] = [0];
 
-    constructor(private readonly ctx: GridContext) {
-        for (let i = 0; i < ctx.rows * ctx.cols; i++) {
-            this.grid.push(new Cell(i))
-        }
-    }
+    constructor(private readonly ctx: GridContext) {}
 
     fill() {
-        while (this.path.length) {
-            const location = this.path[this.path.length-1]!
-            const options = this.options(location)
-
-            if (options.length === 0) {
-                this.path.pop();
-                this.grid[location].add(Direction.VISITED);
-                continue;
-            }
-
-            const [nextLocation, direction] = options[(Math.random() * options.length) | 0];
-            this.grid[location].add(direction);
-            this.path.push(nextLocation);
+        for (let i = 0; i < this.ctx.rows * this.ctx.cols; i++) {
+            this.grid[i] = new Cell((i / this.ctx.cols) | 0, i % this.ctx.cols);
         }
+
+        this.step(0);
+        return;
     }
 
     get(row: number, col: number): Cell {
@@ -83,8 +62,8 @@ class Grid {
 
     private options(location: number): [number, Direction][] {
         const cell = this.grid[location];
-        const x = cell.x(this.ctx.cols);
-        const y = cell.y(this.ctx.cols)
+        const x = cell.x;
+        const y = cell.y;
 
         let options: any[] = []
 
@@ -94,6 +73,20 @@ class Grid {
         if (!this.visited(x, y+1)) options.push([this.index(x, y+1), Direction.RIGHT]);
 
         return options;
+    }
+
+    private step(location: number): void {
+        while (true) {
+            const options = this.options(location);
+            if (!options.length) {
+                break;
+            }
+            const [nextLocation, direction] = options[(Math.random() * options.length) | 0];
+            this.grid[location].add(direction);
+            this.step(nextLocation);
+        };
+
+        this.grid[location].add(Direction.VISITED);
     }
 
     private visited(row: number, col: number): boolean {
@@ -149,13 +142,19 @@ class WaveStrategy implements PaintStrategy {
     }
 }
 
+const BAR_WIDTH = 30;
+const BOX_WIDTH = 2 + BAR_WIDTH;
+
 document.addEventListener('DOMContentLoaded', function () {
     const dimensions = document.body.getBoundingClientRect();
     const canvas = document.createElement('canvas');
 
+    const height = 100;//dimensions.height + 10;
+    const width = 300;//dimensions.width + 10;
+
     document.body.appendChild(canvas);
-    canvas.height = dimensions.height + 10;
-    canvas.width = dimensions.width + 10;
+    canvas.height = height;
+    canvas.width = width;
     canvas.id = 'canvas';
 
     const ctx = canvas.getContext('2d')!;
@@ -174,5 +173,61 @@ document.addEventListener('DOMContentLoaded', function () {
     ctx.strokeStyle = '#4682b4';
     ctx.lineWidth = 30;
 
-    console.log('got here', dimensions, canvas, ctx);
+    const context = new GridContext(
+        1 + Math.ceil(height / BOX_WIDTH),
+        1 + Math.ceil(width / BOX_WIDTH),
+    )
+    const grid = new Grid(context);
+    grid.fill();
+
+    const strategy = getStrategy();
+    const painter = new Painter(ctx);
+    strategy.generate(grid, context).forEach(step => {
+        painter.paint(step, grid, context);
+    })
+
+    grid.grid.forEach((c, i) => console.log(`cell#${i}:`, c.x, c.y, c.paths));
+
+    console.log('got here', dimensions, grid);
 });
+
+function getStrategy(): PaintStrategy {
+    return new WaveStrategy(true, false);
+}
+
+class Painter {
+
+    constructor(private readonly canvas: CanvasRenderingContext2D) {}
+
+    paint(step: Step, grid: Grid, ctx: GridContext): void {
+        for (const [cell, directions] of step.strokes) {
+            const x = cell.x;
+            const y = cell.y;
+
+            const distance = BOX_WIDTH + (BAR_WIDTH >> 1);
+            const gridX = BOX_WIDTH * x;
+            const gridY = BOX_WIDTH * y;
+
+            directions.forEach(d => {
+                this.canvas.moveTo(gridX, gridY);
+                switch (d) {
+                    case Direction.UP:
+                        this.canvas.lineTo(gridX, gridY - distance);
+                        break;
+                    case Direction.DOWN:
+                        this.canvas.lineTo(gridX, gridY + distance);
+                        break;
+                    case Direction.LEFT:
+                        this.canvas.lineTo(gridX - distance, gridY);
+                        break;
+                    case Direction.RIGHT:
+                        this.canvas.lineTo(gridX + distance, gridY);
+                        break;
+                    case Direction.VISITED: break;
+                    case Direction.UNVISITED: break;
+                }
+                this.canvas.stroke();
+            });
+        }
+    }
+}
