@@ -44,8 +44,10 @@ class Grid {
     constructor(private readonly ctx: GridContext) {}
 
     fill() {
-        for (let i = 0; i < this.ctx.rows * this.ctx.cols; i++) {
-            this.grid[i] = new Cell((i / this.ctx.cols) | 0, i % this.ctx.cols);
+        for (let i = 0; i < this.ctx.rows; i++) {
+            for (let j = 0; j < this.ctx.cols; j++) {
+                this.grid[i*this.ctx.cols+j] = new Cell(i, j);
+            }
         }
 
         this.step(0);
@@ -142,15 +144,17 @@ class WaveStrategy implements PaintStrategy {
     }
 }
 
-const BAR_WIDTH = 30;
-const BOX_WIDTH = 2 + BAR_WIDTH;
+const GAP = 4;
+const BAR_WIDTH = 32;
+const BOX_WIDTH = GAP + BAR_WIDTH;
+const PAINT_OFFSET = (BOX_WIDTH / 2) | 0;
 
 document.addEventListener('DOMContentLoaded', function () {
     const dimensions = document.body.getBoundingClientRect();
     const canvas = document.createElement('canvas');
 
-    const height = 100;//dimensions.height + 10;
-    const width = 300;//dimensions.width + 10;
+    const height = dimensions.height + 10;
+    const width = dimensions.width + 10;
 
     document.body.appendChild(canvas);
     canvas.height = height;
@@ -167,15 +171,16 @@ document.addEventListener('DOMContentLoaded', function () {
     canvas.height *= pixelRatio;
 
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    ctx.translate(PAINT_OFFSET, PAINT_OFFSET);
 
     ctx.beginPath();
 
     ctx.strokeStyle = '#4682b4';
-    ctx.lineWidth = 30;
+    ctx.lineWidth = BAR_WIDTH;
 
-    const context = new GridContext(
-        1 + Math.ceil(height / BOX_WIDTH),
-        1 + Math.ceil(width / BOX_WIDTH),
+    const context = new GridContext(//10, 7
+        Math.ceil(height / BOX_WIDTH),
+        Math.ceil(width / BOX_WIDTH),
     )
     const grid = new Grid(context);
     grid.fill();
@@ -201,33 +206,32 @@ class Painter {
 
     paint(step: Step, grid: Grid, ctx: GridContext): void {
         for (const [cell, directions] of step.strokes) {
-            const x = cell.x;
-            const y = cell.y;
-
-            const distance = BOX_WIDTH + (BAR_WIDTH >> 1);
-            const gridX = BOX_WIDTH * x;
-            const gridY = BOX_WIDTH * y;
+            const distance = GAP + BAR_WIDTH + (BAR_WIDTH >> 1);
+            const gridX = BOX_WIDTH * cell.y;
+            const gridY = BOX_WIDTH * cell.x;
 
             directions.forEach(d => {
-                this.canvas.moveTo(gridX, gridY);
                 switch (d) {
                     case Direction.UP:
+                        this.canvas.moveTo(gridX, gridY);
                         this.canvas.lineTo(gridX, gridY - distance);
                         break;
                     case Direction.DOWN:
+                        this.canvas.moveTo(gridX, gridY);
                         this.canvas.lineTo(gridX, gridY + distance);
                         break;
                     case Direction.LEFT:
+                        this.canvas.moveTo(gridX, gridY);
                         this.canvas.lineTo(gridX - distance, gridY);
                         break;
                     case Direction.RIGHT:
+                        this.canvas.moveTo(gridX, gridY);
                         this.canvas.lineTo(gridX + distance, gridY);
                         break;
-                    case Direction.VISITED: break;
-                    case Direction.UNVISITED: break;
                 }
-                this.canvas.stroke();
+                // this.canvas.fillText(`${cell.x * 7 + cell.y}`, gridX, gridY)
             });
+            this.canvas.stroke();
         }
     }
 }

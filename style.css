@@ -14,46 +14,9 @@ html, body {
     width: 100%;
 }
 
-div#main {
-    background-color: #fcfcfa;
-    border-radius: 2px;
-    border: solid #4682b4 2px;
-    left: 0;
-    margin: auto;
-    opacity: 0.95;
-    padding: 0 15px;
-    position: absolute;
-    right: 0;
-    top: 60px;
-    width: 600px;
-    z-index: 10;
-}
-
-h1, p {
-    padding: 0;
-}
-
 canvas {
     padding: 0;
     margin: 0;
     position: absolute;
-}
-
-a {
-    color: #4682b4;
-    text-decoration: none;
-}
-
-a:hover {
-    color: #7BE;
-}
-
-div.footer {
-    display: block;
-    position: fixed;
-    bottom: 0;
-    opacity: 0.95;
-    padding: 0 10px;
-    background-color: #fcfcfa;
-    z-index: 10;
+    border: solid 2px white;
 }
