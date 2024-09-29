@@ -22,7 +22,10 @@ class GridContext {
 }
 
 class Cell {
+
     public readonly paths: Set<Direction> = new Set([Direction.UNVISITED]);
+
+    constructor(public readonly location: number) {}
 
     add(direction: Direction): void {
         this.paths.delete(Direction.UNVISITED);
@@ -31,6 +34,14 @@ class Cell {
 
     visited(): boolean {
         return !this.paths.has(Direction.UNVISITED);
+    }
+
+    x(cols: number): number {
+        return (this.location / cols) | 0;
+    }
+
+    y(cols: number): number {
+        return this.location % cols;
     }
 }
 
@@ -41,7 +52,7 @@ class Grid {
 
     constructor(private readonly ctx: GridContext) {
         for (let i = 0; i < ctx.rows * ctx.cols; i++) {
-            this.grid.push(new Cell())
+            this.grid.push(new Cell(i))
         }
     }
 
@@ -71,8 +82,9 @@ class Grid {
     }
 
     private options(location: number): [number, Direction][] {
-        const x = (location / this.ctx.cols) | 0
-        const y = location % this.ctx.cols
+        const cell = this.grid[location];
+        const x = cell.x(this.ctx.cols);
+        const y = cell.y(this.ctx.cols)
 
         let options: any[] = []
 
@@ -91,6 +103,7 @@ class Grid {
     }
 }
 
+// zig zag thru the grid to generate waves of cells to paint
 class WaveStrategy implements PaintStrategy {
     constructor(
         // whether to alternative directions
@@ -109,22 +122,20 @@ class WaveStrategy implements PaintStrategy {
         for (let x = 0; x < iterations; x++) {
             const wave: Cell[] = [];
 
-            let boundingX = Math.min(x, ctx.rows - 1)
-            let yOffset = x < ctx.rows - 1 ? 0 : x - ctx.rows + 1;
+            const boundingX = Math.min(x, ctx.rows - 1)
+            const yOffset = x < ctx.rows - 1 ? 0 : x - ctx.rows + 1;
 
             for (let y = 0; y + yOffset < ctx.cols && boundingX >= y; y++) {
                 wave.push(grid.get(boundingX - y, y + yOffset))
             }
 
-            if (!this.zigzag) {
-                continue; // no need to deal with direction
-            }
-
-            if (direction === Direction.DOWN) {
-                wave.reverse();
-                direction = Direction.UP;
-            } else {
-                direction = Direction.DOWN;
+            if (this.zigzag) {
+                if (direction === Direction.DOWN) {
+                    wave.reverse();
+                    direction = Direction.UP;
+                } else {
+                    direction = Direction.DOWN;
+                }
             }
 
             if (this.zip) { // draw each cell 1-by-1
@@ -137,3 +148,31 @@ class WaveStrategy implements PaintStrategy {
         return steps;
     }
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    const dimensions = document.body.getBoundingClientRect();
+    const canvas = document.createElement('canvas');
+
+    document.body.appendChild(canvas);
+    canvas.height = dimensions.height + 10;
+    canvas.width = dimensions.width + 10;
+    canvas.id = 'canvas';
+
+    const ctx = canvas.getContext('2d')!;
+
+    var pixelRatio = window.devicePixelRatio || 1;
+
+    canvas.style.width = canvas.width + 'px';
+    canvas.style.height = canvas.height + 'px';
+    canvas.width *= pixelRatio;
+    canvas.height *= pixelRatio;
+
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+    ctx.beginPath();
+
+    ctx.strokeStyle = '#4682b4';
+    ctx.lineWidth = 30;
+
+    console.log('got here', dimensions, canvas, ctx);
+});
