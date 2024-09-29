@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ctx.strokeStyle = '#4682b4';
     ctx.lineWidth = BAR_WIDTH;
 
-    const context = new GridContext(//10, 7
+    const context = new GridContext(
         Math.ceil(height / BOX_WIDTH),
         Math.ceil(width / BOX_WIDTH),
     )
@@ -187,11 +187,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const strategy = getStrategy();
     const painter = new Painter(ctx);
-    strategy.generate(grid, context).forEach(step => {
-        painter.paint(step, grid, context);
-    })
+    const steps = strategy.generate(grid, context);
 
-    grid.grid.forEach((c, i) => console.log(`cell#${i}:`, c.x, c.y, c.paths));
+    function walkStep(n: number, done: () => void) {
+        if (n === steps.length) {
+            return done();
+        }
+        painter.paint(steps[n], grid, context, () => walkStep(n+1, done))
+    }
+    walkStep(0, () => console.log('done painting!'));
 
     console.log('got here', dimensions, grid);
 });
@@ -200,38 +204,53 @@ function getStrategy(): PaintStrategy {
     return new WaveStrategy(true, false);
 }
 
+const DRAW_DISTANCE = GAP + BAR_WIDTH * 1.5;
 class Painter {
+
+    private static STEPS: number = 8;
 
     constructor(private readonly canvas: CanvasRenderingContext2D) {}
 
-    paint(step: Step, grid: Grid, ctx: GridContext): void {
+    paint(step: Step, grid: Grid, ctx: GridContext, done: () => void): void {
+        window.requestAnimationFrame(timestamp => {
+            this.drawFrame(1, step, done)
+        });
+    }
+
+    private drawFrame(n: number, step: Step, done: () => void): void {
+        if (n > Painter.STEPS) {
+            return done();
+        }
+
+        const offset = ((n-1)/Painter.STEPS) * DRAW_DISTANCE;
+        const distance = (n/Painter.STEPS) * DRAW_DISTANCE;
+
         for (const [cell, directions] of step.strokes) {
-            const distance = GAP + BAR_WIDTH + (BAR_WIDTH >> 1);
             const gridX = BOX_WIDTH * cell.y;
             const gridY = BOX_WIDTH * cell.x;
 
             directions.forEach(d => {
                 switch (d) {
                     case Direction.UP:
-                        this.canvas.moveTo(gridX, gridY);
+                        this.canvas.moveTo(gridX, gridY - offset);
                         this.canvas.lineTo(gridX, gridY - distance);
                         break;
                     case Direction.DOWN:
-                        this.canvas.moveTo(gridX, gridY);
+                        this.canvas.moveTo(gridX, gridY + offset);
                         this.canvas.lineTo(gridX, gridY + distance);
                         break;
                     case Direction.LEFT:
-                        this.canvas.moveTo(gridX, gridY);
+                        this.canvas.moveTo(gridX - offset, gridY);
                         this.canvas.lineTo(gridX - distance, gridY);
                         break;
                     case Direction.RIGHT:
-                        this.canvas.moveTo(gridX, gridY);
+                        this.canvas.moveTo(gridX + offset, gridY);
                         this.canvas.lineTo(gridX + distance, gridY);
                         break;
                 }
-                // this.canvas.fillText(`${cell.x * 7 + cell.y}`, gridX, gridY)
             });
-            this.canvas.stroke();
         }
+        this.canvas.stroke();
+        window.requestAnimationFrame(t => this.drawFrame(n+1, step, done));
     }
 }
