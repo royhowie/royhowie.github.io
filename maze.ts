@@ -49,9 +49,7 @@ class Grid {
                 this.grid[i*this.ctx.cols+j] = new Cell(i, j);
             }
         }
-
         this.step(0);
-        return;
     }
 
     get(row: number, col: number): Cell {
@@ -144,7 +142,54 @@ class WaveStrategy implements PaintStrategy {
     }
 }
 
+class BfsWalk implements PaintStrategy {
+
+    generate(grid: Grid, ctx: GridContext): Step[] {
+        const steps: Step[] = [];
+        let cells = [grid.get(0, 0)]
+
+        while (cells.length) {
+            const nextCells: Cell[] = []
+            const nextWave = new Step(new Map())
+
+            cells.forEach(cell => {
+                nextWave.strokes.set(cell, cell.paths);
+
+                cell.paths.forEach(direction => {
+                    switch (direction) {
+                        case Direction.UP:
+                            if (cell.x > 0) {
+                                nextCells.push(grid.get(cell.x-1, cell.y));
+                            }
+                            break;
+                        case Direction.DOWN:
+                            if (cell.x < ctx.rows - 1) {
+                                nextCells.push(grid.get(cell.x+1, cell.y));
+                            }
+                            break;
+                        case Direction.LEFT:
+                            if (cell.y > 0) {
+                                nextCells.push(grid.get(cell.x, cell.y-1));
+                            }
+                            break;
+                        case Direction.RIGHT:
+                            if (cell.y < ctx.cols - 1) {
+                                nextCells.push(grid.get(cell.x, cell.y+1));
+                            }
+                            break;
+                    }
+                })
+            })
+            cells = nextCells;
+            steps.push(nextWave);
+        }
+
+        return steps;
+    }
+}
+
 class RandomWalk implements PaintStrategy {
+
     constructor(private readonly concurrentCells: number) {}
 
     generate(grid: Grid, ctx: GridContext): Step[] {
@@ -235,12 +280,12 @@ document.addEventListener('DOMContentLoaded', function () {
         painter.paint(steps[n], grid, context, () => walkStep(n+1, done))
     }
     walkStep(0, () => console.log('done painting!'));
-
     console.log('got here', dimensions, grid);
 });
 
 function getStrategy(): PaintStrategy {
     const strategies = [
+        new BfsWalk(),
         new RandomWalk(50),
         new WaveStrategy(true, false),
         new WaveStrategy(true, true),
@@ -251,7 +296,7 @@ function getStrategy(): PaintStrategy {
 const DRAW_DISTANCE = GAP + BAR_WIDTH * 1.5;
 class Painter {
 
-    private static STEPS: number = 3;
+    private static STEPS: number = 1;
 
     constructor(private readonly canvas: CanvasRenderingContext2D) {}
 
@@ -275,7 +320,7 @@ class Painter {
 
             // draw extra for the first cell bc nothing else draws into it
             if (cell.x === 0 && cell.y === 0) {
-                this.canvas.moveTo(1.5-PAINT_OFFSET, 0);
+                this.canvas.moveTo((GAP/2)-PAINT_OFFSET, 0);
                 this.canvas.lineTo(BOX_WIDTH, 0);
             }
 
