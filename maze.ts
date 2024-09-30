@@ -39,7 +39,7 @@ class Cell {
 
 class Grid {
 
-    public readonly grid: Cell[] = [];
+    private readonly grid: Cell[] = [];
 
     constructor(private readonly ctx: GridContext) {}
 
@@ -144,6 +144,45 @@ class WaveStrategy implements PaintStrategy {
     }
 }
 
+class RandomWalk implements PaintStrategy {
+    constructor(private readonly concurrentCells: number) {}
+
+    generate(grid: Grid, ctx: GridContext): Step[] {
+        const steps: Step[] = [];
+
+        const ordered: Cell[] = []
+        for (let x = 0; x < ctx.rows; x++) {
+            for (let y = 0; y < ctx.cols; y++) {
+                ordered.push(grid.get(x, y))
+            }
+        }
+
+        RandomWalk.shuffle(ordered);
+
+        let i = 0;
+        while (i < ordered.length) {
+            const m: Map<Cell, Set<Direction>> = new Map();
+            for (let j = 0; j < this.concurrentCells && i + j < ordered.length; j++) {
+                const cell = ordered[i + j];
+                m.set(cell, cell.paths);
+            }
+            steps.push(new Step(m));
+            i += this.concurrentCells;
+        }
+
+        return steps;
+    }
+
+    private static shuffle(arr: any[]): void {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+        }
+    }
+}
+
 const GAP = 4;
 const BAR_WIDTH = 32;
 const BOX_WIDTH = GAP + BAR_WIDTH;
@@ -201,13 +240,17 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function getStrategy(): PaintStrategy {
-    return new WaveStrategy(true, false);
+    const strategies = [
+        new RandomWalk(50),
+        new WaveStrategy(true, false),
+    ];
+    return strategies[(strategies.length * Math.random()) | 0]
 }
 
 const DRAW_DISTANCE = GAP + BAR_WIDTH * 1.5;
 class Painter {
 
-    private static STEPS: number = 8;
+    private static STEPS: number = 5;
 
     constructor(private readonly canvas: CanvasRenderingContext2D) {}
 
