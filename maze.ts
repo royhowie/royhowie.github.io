@@ -243,6 +243,7 @@ function getStrategy(): PaintStrategy {
     const strategies = [
         new RandomWalk(50),
         new WaveStrategy(true, false),
+        new WaveStrategy(true, true),
     ];
     return strategies[(strategies.length * Math.random()) | 0]
 }
@@ -250,7 +251,7 @@ function getStrategy(): PaintStrategy {
 const DRAW_DISTANCE = GAP + BAR_WIDTH * 1.5;
 class Painter {
 
-    private static STEPS: number = 5;
+    private static STEPS: number = 3;
 
     constructor(private readonly canvas: CanvasRenderingContext2D) {}
 
@@ -271,6 +272,12 @@ class Painter {
         for (const [cell, directions] of step.strokes) {
             const gridX = BOX_WIDTH * cell.y;
             const gridY = BOX_WIDTH * cell.x;
+
+            // draw extra for the first cell bc nothing else draws into it
+            if (cell.x === 0 && cell.y === 0) {
+                this.canvas.moveTo(1.5-PAINT_OFFSET, 0);
+                this.canvas.lineTo(BOX_WIDTH, 0);
+            }
 
             directions.forEach(d => {
                 switch (d) {
@@ -293,6 +300,7 @@ class Painter {
                 }
             });
         }
+
         this.canvas.stroke();
         window.requestAnimationFrame(t => this.drawFrame(n+1, step, done));
     }
