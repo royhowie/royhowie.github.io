@@ -150,7 +150,7 @@ export class Painter {
             // draw extra for the first cell bc nothing else draws into it
             if (cell.x === 0 && cell.y === 0) {
                 this.canvas.moveTo((GAP/2)-PAINT_OFFSET, 0);
-                this.canvas.lineTo(BOX_WIDTH, 0);
+                this.canvas.lineTo(0, 0);
             }
 
             directions.forEach(d => {
