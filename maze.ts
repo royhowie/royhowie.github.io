@@ -24,16 +24,28 @@ class GridContext {
 class Cell {
 
     public readonly paths: Set<Direction> = new Set([Direction.UNVISITED]);
+    public readonly neighbors: Set<Cell> = new Set();
 
     constructor(public readonly x: number, public readonly y: number) {}
 
     add(direction: Direction): void {
-        this.paths.delete(Direction.UNVISITED);
+        this.visit();
         this.paths.add(direction);
     }
 
+    visit(): void {
+        this.paths.delete(Direction.UNVISITED);
+    }
+
     visited(): boolean {
-        return !this.paths.has(Direction.UNVISITED);
+        return this.paths.size === 0 || !this.paths.has(Direction.UNVISITED);
+    }
+
+    static swapInfo(a: Cell, b: Cell): void {
+        a.neighbors.add(b);
+        b.neighbors.add(a);
+        // TODO fix this
+        console.log(`(${a.x},${a.y}) <-> (${b.x},${b.y})`, a, b)
     }
 }
 
@@ -76,6 +88,8 @@ class Grid {
     }
 
     private step(location: number): void {
+        this.grid[location].visit();
+
         while (true) {
             const options = this.options(location);
             if (!options.length) {
@@ -83,10 +97,9 @@ class Grid {
             }
             const [nextLocation, direction] = options[(Math.random() * options.length) | 0];
             this.grid[location].add(direction);
+            Cell.swapInfo(this.grid[location], this.grid[nextLocation]);
             this.step(nextLocation);
         };
-
-        this.grid[location].add(Direction.VISITED);
     }
 
     private visited(row: number, col: number): boolean {
@@ -228,10 +241,13 @@ class RandomWalk implements PaintStrategy {
     }
 }
 
+const BAR_COLOR = '#4682b4'
 const GAP = 4;
 const BAR_WIDTH = 32;
 const BOX_WIDTH = GAP + BAR_WIDTH;
 const PAINT_OFFSET = (BOX_WIDTH / 2) | 0;
+const BALL_RADIUS = (BAR_WIDTH / 3) | 0
+var GRID
 
 document.addEventListener('DOMContentLoaded', function () {
     const dimensions = document.body.getBoundingClientRect();
@@ -257,17 +273,20 @@ document.addEventListener('DOMContentLoaded', function () {
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     ctx.translate(PAINT_OFFSET, PAINT_OFFSET);
 
-    ctx.beginPath();
+    // ctx.beginPath();
 
-    ctx.strokeStyle = '#4682b4';
+    ctx.strokeStyle = BAR_COLOR;
     ctx.lineWidth = BAR_WIDTH;
 
+    // Grid uses (x,y) for (rows,cols), i.e. (vert, horiz) distance
+    // but Canvas uses (x,y) for (horiz, vert) distance, so swap em
     const context = new GridContext(
         Math.ceil(height / BOX_WIDTH),
         Math.ceil(width / BOX_WIDTH),
     )
     const grid = new Grid(context);
     grid.fill();
+    GRID = grid;
 
     const strategy = getStrategy();
     const painter = new Painter(ctx);
@@ -279,21 +298,116 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         painter.paint(steps[n], grid, context, () => walkStep(n+1, done))
     }
-    walkStep(0, () => console.log('done painting!'));
-    console.log('got here', dimensions, grid);
+
+    let mouseEvent: (MouseEvent | undefined)
+
+    const location: [number, number] = [0, 0];
+    walkStep(0, () => {
+        console.log('done painting!', dimensions, grid);
+        canvas.addEventListener('mousemove', (event) => mouseEvent = event);
+        drawCircle(context, ctx, location, 'red');
+        mouseFollow()
+    });
+
+    // const rect = canvas.getBoundingClientRect();
+
+    function mouseFollow() {
+        if (mouseEvent) {
+            // const [x, y] = bounder(mouseEvent);
+            // const [x, y] = [mouseEvent.clientX / BOX_WIDTH, mouseEvent.clientY / BOX_WIDTH];
+            // move between 0 and BOX_WIDTH/3 in the direction of the mouse
+            const mouseX = mouseEvent.clientX;
+            const mouseY = mouseEvent.clientY;
+
+            // FIXME: how are these coordinations generated???
+            const dx = mouseEvent.clientY - BOX_WIDTH*location[0];
+            const dy = mouseEvent.clientX - BOX_WIDTH*location[1];
+            const len = Math.sqrt(dx * dx + dy * dy);
+
+            const vec = [
+                dy/len,
+                dx/len,
+                // bound(-1, 1, mouseY-BOX_WIDTH*location[0]),
+                // bound(-1, 1, mouseX-BOX_WIDTH*location[1]),
+                //(mouseY-BOX_WIDTH*location[0])/height,
+                //(mouseX-BOX_WIDTH*location[1])/width,
+            ];
+            // get the nearest cell of the current dot;
+            // shift back half a cell to account for ctx.translate in the visualization 
+            const cell = grid.get(
+                Math.round(location[0]),
+                Math.round(location[1]),
+                //Math.round(location[1]-0.5)
+            );
+            const GAP_BOUNDARY = (GAP+1)/(2*BOX_WIDTH);
+
+            const boundedMove = [
+                Math.max(0, cell.x - 0.5 + GAP_BOUNDARY), // min X
+                Math.min(context.rows - 1, cell.x + 0.5 - GAP_BOUNDARY), // max X
+                Math.max(0, cell.y - 0.5 + GAP_BOUNDARY), // min Y
+                Math.min(context.cols - 1, cell.y + 0.5 - GAP_BOUNDARY), // max Y
+            ]
+
+            for (let n of cell.neighbors) {
+                if (n.x < cell.x) boundedMove[0] = n.x;
+                if (n.x > cell.x) boundedMove[1] = n.x;
+                if (n.y < cell.y) boundedMove[2] = n.y;
+                if (n.y > cell.y) boundedMove[3] = n.y;
+            }
+
+            const nextLocation: [number, number] = [
+                bound(boundedMove[0], boundedMove[1], location[0] + vec[0]),
+                bound(boundedMove[2], boundedMove[3], location[1] + vec[1]),
+                // Math.min(boundedMove[1], Math.max(boundedMove[0], location[0] + vec[0])),
+                // Math.min(boundedMove[3], Math.max(boundedMove[2], location[1] + vec[1])),
+            ];
+
+            const EPS = 0.01
+            if (true || Math.abs(nextLocation[0]-location[0]) > EPS || Math.abs(nextLocation[1]-location[1])) {
+                console.log(
+                    Date.now(),
+                    'current',
+                    location,
+                    'next',
+                    nextLocation,
+                    'bounds',
+                    boundedMove,
+                    'vec',
+                    vec);
+                drawCircle(context, ctx, location, BAR_COLOR);
+                location[0] = nextLocation[0];
+                location[1] = nextLocation[1];
+                drawCircle(context, ctx, nextLocation, 'red');
+            }
+        }
+        window.requestAnimationFrame(t => mouseFollow());
+    }
 });
+
+function bound(min: number, max: number, n: number): number {
+    return Math.min(max, Math.max(min, n));
+}
+
+function drawCircle(gridContext: GridContext, ctx: CanvasRenderingContext2D, [x, y]: [number, number], color: string): void {
+    const gridX = y * BOX_WIDTH - BALL_RADIUS;
+    const gridY = x * BOX_WIDTH - BALL_RADIUS;
+    ctx.beginPath();
+    ctx.arc(gridX, gridY, BALL_RADIUS, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+}
 
 function getStrategy(): PaintStrategy {
     const strategies = [
-        new BfsWalk(),
+        // new BfsWalk(),
         new RandomWalk(50),
-        new WaveStrategy(true, false),
-        new WaveStrategy(true, true),
+        // new WaveStrategy(true, false),
+        // new WaveStrategy(true, true),
     ];
     return strategies[(strategies.length * Math.random()) | 0]
 }
 
-const DRAW_DISTANCE = GAP + BAR_WIDTH * 1.5;
+const DRAW_DISTANCE = GAP + BAR_WIDTH * 1.5
 class Painter {
 
     private static STEPS: number = 1;
@@ -301,9 +415,7 @@ class Painter {
     constructor(private readonly canvas: CanvasRenderingContext2D) {}
 
     paint(step: Step, grid: Grid, ctx: GridContext, done: () => void): void {
-        window.requestAnimationFrame(timestamp => {
-            this.drawFrame(1, step, done)
-        });
+        window.requestAnimationFrame(() => this.drawFrame(1, step, done));
     }
 
     private drawFrame(n: number, step: Step, done: () => void): void {
@@ -311,8 +423,8 @@ class Painter {
             return done();
         }
 
-        const offset = ((n-1)/Painter.STEPS) * DRAW_DISTANCE;
-        const distance = (n/Painter.STEPS) * DRAW_DISTANCE;
+        const start = ((n-1)/Painter.STEPS) * DRAW_DISTANCE;
+        const drawDistance = DRAW_DISTANCE / Painter.STEPS;
 
         for (const [cell, directions] of step.strokes) {
             const gridX = BOX_WIDTH * cell.y;
@@ -327,26 +439,26 @@ class Painter {
             directions.forEach(d => {
                 switch (d) {
                     case Direction.UP:
-                        this.canvas.moveTo(gridX, gridY - offset);
-                        this.canvas.lineTo(gridX, gridY - distance);
+                        this.canvas.moveTo(gridX, gridY - start);
+                        this.canvas.lineTo(gridX, gridY - start - drawDistance);
                         break;
                     case Direction.DOWN:
-                        this.canvas.moveTo(gridX, gridY + offset);
-                        this.canvas.lineTo(gridX, gridY + distance);
+                        this.canvas.moveTo(gridX, gridY + start);
+                        this.canvas.lineTo(gridX, gridY + start + drawDistance);
                         break;
                     case Direction.LEFT:
-                        this.canvas.moveTo(gridX - offset, gridY);
-                        this.canvas.lineTo(gridX - distance, gridY);
+                        this.canvas.moveTo(gridX - start, gridY);
+                        this.canvas.lineTo(gridX - start - drawDistance, gridY);
                         break;
                     case Direction.RIGHT:
-                        this.canvas.moveTo(gridX + offset, gridY);
-                        this.canvas.lineTo(gridX + distance, gridY);
+                        this.canvas.moveTo(gridX + start, gridY);
+                        this.canvas.lineTo(gridX + start + drawDistance, gridY);
                         break;
                 }
             });
         }
 
         this.canvas.stroke();
-        window.requestAnimationFrame(t => this.drawFrame(n+1, step, done));
+        window.requestAnimationFrame(() => this.drawFrame(n+1, step, done));
     }
 }
