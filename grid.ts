@@ -44,12 +44,10 @@ export class Grid {
         }
     }
 
-    get(row: number, col: number): Cell {
-        return this.grid[this.index(row, col)];
-    }
-
-    private index(row: number, col: number): number {
-        return col + (row * this.ctx.cols);
+    get(row: number, col: number): (Cell | undefined) {
+        if (row < 0 || row >= this.ctx.rows) return undefined;
+        if (col < 0 || col >= this.ctx.cols) return undefined;
+        return this.grid[col + (row * this.ctx.cols)];
     }
 }
 
@@ -59,20 +57,22 @@ export interface GridWalker {
 
 export class BfsFill implements GridWalker {
 
-    newGrid(ctx: GridContext): Grid {
-        const grid = new Grid(ctx);
-        this.step(grid.get(0, 0), grid);
+    constructor(private readonly ctx: GridContext) {}
+
+    newGrid(): Grid {
+        const grid = new Grid(this.ctx);
+        this.step(grid.get(0, 0)!, grid);
         return grid;
     }
 
     private options(cell: Cell, grid: Grid): [Cell, Direction][] {
-        const options: [Cell, Direction][] = [
+        const options: [Cell | undefined, Direction][] = [
             [grid.get(cell.x-1, cell.y), Direction.UP],
             [grid.get(cell.x+1, cell.y), Direction.DOWN],
             [grid.get(cell.x, cell.y-1), Direction.LEFT],
             [grid.get(cell.x, cell.y+1), Direction.RIGHT],
         ];
-        return options.filter(([cell, direction]) => cell && !cell.visited());
+        return options.filter(([cell, direction]) => cell && !cell.visited()) as [Cell, Direction][];
     }
 
     private step(cell: Cell, grid: Grid): void {

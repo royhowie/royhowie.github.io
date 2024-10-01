@@ -37,7 +37,7 @@ export class WaveStrategy implements PaintStrategy {
             const yOffset = x < ctx.rows - 1 ? 0 : x - ctx.rows + 1;
 
             for (let y = 0; y + yOffset < ctx.cols && boundingX >= y; y++) {
-                wave.push(grid.get(boundingX - y, y + yOffset))
+                wave.push(grid.get(boundingX - y, y + yOffset)!)
             }
 
             if (this.zigzag) {
@@ -63,37 +63,17 @@ export class BfsWalk implements PaintStrategy {
     generate(grid: Grid, ctx: GridContext): Step[] {
         const steps: Step[] = [];
         let cells = [grid.get(0, 0)]
+        const visited: Set<Cell> = new Set()
 
         while (cells.length) {
             const nextCells: Cell[] = []
             const nextWave = new Step(new Map())
 
             cells.forEach(cell => {
-                nextWave.strokes.set(cell, new Set(cell.paths.keys()));
-
-                for (const direction of cell.paths.keys()) {
-                    switch (direction) {
-                        case Direction.UP:
-                            if (cell.x > 0) {
-                                nextCells.push(grid.get(cell.x-1, cell.y));
-                            }
-                            break;
-                        case Direction.DOWN:
-                            if (cell.x < ctx.rows - 1) {
-                                nextCells.push(grid.get(cell.x+1, cell.y));
-                            }
-                            break;
-                        case Direction.LEFT:
-                            if (cell.y > 0) {
-                                nextCells.push(grid.get(cell.x, cell.y-1));
-                            }
-                            break;
-                        case Direction.RIGHT:
-                            if (cell.y < ctx.cols - 1) {
-                                nextCells.push(grid.get(cell.x, cell.y+1));
-                            }
-                            break;
-                    }
+                if (cell && !visited.has(cell)) {
+                    visited.add(cell);
+                    nextWave.strokes.set(cell, new Set(cell.paths.keys()));
+                    nextCells.push(...cell.paths.values())
                 }
             })
             cells = nextCells;
@@ -114,7 +94,7 @@ export class RandomWalk implements PaintStrategy {
         const ordered: Cell[] = []
         for (let x = 0; x < ctx.rows; x++) {
             for (let y = 0; y < ctx.cols; y++) {
-                ordered.push(grid.get(x, y))
+                ordered.push(grid.get(x, y)!)
             }
         }
 

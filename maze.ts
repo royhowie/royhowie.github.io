@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
         Math.ceil(height / BOX_WIDTH),
         Math.ceil(width / BOX_WIDTH),
     )
-    const grid = new BfsFill().newGrid(context);
+    const grid = new BfsFill(context).newGrid();
     const strategy = getStrategy();
     const painter = new Painter(ctx);
     const steps = strategy.generate(grid, context);
