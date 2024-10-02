@@ -1,5 +1,5 @@
 import { BfsFill, GridContext, RecursiveDivide } from './grid'
-import { BAR_COLOR, BAR_WIDTH, BOX_WIDTH, BfsWalk, RandomWalk, Painter, PaintStrategy, PAINT_OFFSET, WaveStrategy } from './painting';
+import { BAR_COLOR, BAR_WIDTH, BOX_WIDTH, BfsWalk, RandomWalk, Painter, PaintStrategy, PAINT_OFFSET, WaveStrategy, GAP } from './painting';
 
 document.addEventListener('DOMContentLoaded', function () {
     const dimensions = document.body.getBoundingClientRect();
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
     canvas.height *= pixelRatio;
 
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    // ctx.translate(PAINT_OFFSET, PAINT_OFFSET);
+    ctx.translate(GAP, GAP);
 
     ctx.strokeStyle = BAR_COLOR;
     ctx.lineWidth = BAR_WIDTH;
@@ -32,9 +32,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Grid uses (x,y) for (rows,cols), i.e. (vert, horiz) distance
     // but Canvas uses (x,y) for (horiz, vert) distance, so swap em
     const context = new GridContext(
-        Math.ceil(height / BOX_WIDTH),
-        Math.ceil(width / BOX_WIDTH),
-    )
+        5,8
+        // Math.ceil(width / BOX_WIDTH), Math.ceil(height / BOX_WIDTH),
+    );
     const grid = new BfsFill(context).newGrid();
     // const grid = new RecursiveDivide(context).newGrid();
     const strategy = getStrategy();

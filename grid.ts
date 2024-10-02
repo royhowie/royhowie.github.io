@@ -101,28 +101,29 @@ export class RecursiveDivide implements GridWalker {
     divide(grid: Grid, x: number, y: number, limitX: number, limitY: number): void {
         if (limitX - x <= 1 || limitY - y <= 1) return;
 
-        if (Math.random() < 0.5) { // horizontal division
+        if (limitY < limitX) { // horizontal division
             const row = this.random(x+1, limitX);
             const col = this.random(y, limitY - 1);
-            console.log(`[A]: picked (${row},${col})`)
+            console.log(`[horizontal]: picked (${row},${col}) from ${x}-${limitX} & ${y}-${limitY}`)
 
             for (let i = y; i < limitY - 1; i++) {
-                grid.get(row-1, i)!.walkTo(Direction.RIGHT, grid.get(row, i)!)
-                grid.get(row, i)!.walkTo(Direction.RIGHT, grid.get(row, i)!)
+                grid.get(row-1, i)!.walkTo(Direction.RIGHT, grid.get(row-1, i+1)!)
+                grid.get(row, i)!.walkTo(Direction.RIGHT, grid.get(row, i+1)!)
             }
-            grid.get(row-1, col)!.walkTo(Direction.UP, grid.get(row, col)!)
+            grid.get(row-1, col)!.walkTo(Direction.DOWN, grid.get(row, col)!)
 
             this.divide(grid, x, y, row, limitY);
             this.divide(grid, row, y, limitX, limitY);
         } else { // vertical division
             const row = this.random(x, limitX);
             const col = this.random(y+1, limitY - 1);
+            console.log(`[horizontal]: picked (${row},${col}) from ${x}-${limitX} & ${y}-${limitY}`)
 
             for (let i = x; i < limitX - 1; i++) {
-                grid.get(i, col-1)!.walkTo(Direction.DOWN, grid.get(i, col)!)
-                grid.get(i, col)!.walkTo(Direction.DOWN, grid.get(i, col)!)
+                grid.get(i, col-1)!.walkTo(Direction.DOWN, grid.get(i+1, col-1)!)
+                grid.get(i, col)!.walkTo(Direction.DOWN, grid.get(i+1, col)!)
             }
-            grid.get(row, col-1)?.walkTo(Direction.RIGHT, grid.get(row, col)!)
+            grid.get(row, col-1)!.walkTo(Direction.RIGHT, grid.get(row, col)!)
 
             this.divide(grid, x, y, limitX, col);
             this.divide(grid, x, col, limitX, limitY);

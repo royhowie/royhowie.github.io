@@ -3,7 +3,7 @@ import { Cell, Direction, Grid, GridContext} from './grid'
 export const BAR_COLOR = '#4682b4'
 export const GAP = 2;
 export const BAR_WIDTH = 32;
-export const BOX_WIDTH = 2 * GAP + BAR_WIDTH;
+export const BOX_WIDTH = GAP + BAR_WIDTH;
 export const PAINT_OFFSET = (BOX_WIDTH / 2) | 0;
 
 export class Step {
@@ -135,10 +135,12 @@ export class Painter {
     }
 
     private outOfBoundsDraw(x: number, y: number, d: Direction, ctx: GridContext): boolean {
-        return (x === 0 && d === Direction.LEFT)
-            || (x === ctx.rows-1 && d === Direction.RIGHT)
-            || (y === 0 && d === Direction.UP)
-            || (y === ctx.cols-1 && d === Direction.DOWN);
+        switch (d) {
+            case Direction.UP:      return x === 0;
+            case Direction.DOWN:    return x === ctx.cols - 1;
+            case Direction.LEFT:    return y === 0;
+            case Direction.RIGHT:   return y === ctx.rows - 1;
+        };
     }
 
     private drawFrame(n: number, ctx: GridContext, step: Step, done: () => void): void {
@@ -148,45 +150,56 @@ export class Painter {
 
         for (const [cell, directions] of step.strokes) {
             directions.forEach(d => {
-                // 
-                const distance = this.outOfBoundsDraw(cell.x, cell.y, d, ctx)
-                        ? BAR_WIDTH
-                        : BOX_WIDTH * 1.5;
-                let start = distance * (n-1) / Painter.STEPS;
-                let drawDistance = distance / Painter.STEPS;
+                const outofbounds = this.outOfBoundsDraw(cell.x, cell.y, d, ctx);
+                const distance = outofbounds ? BAR_WIDTH : BOX_WIDTH
+                const start = distance * (n-1) / Painter.STEPS;
+                const drawDistance = distance / Painter.STEPS;
 
-                // find the coords of the (y,x) box then shift to the middle
-                let gridX = BOX_WIDTH * cell.y + BOX_WIDTH / 2;
-                let gridY = BOX_WIDTH * cell.x + BOX_WIDTH / 2;
+                this.canvas.beginPath();
 
-                const offset = BAR_WIDTH/2;
+                // this.canvas.strokeStyle = ['red', 'black', 'green', 'blue'][(cell.x * 2 + cell.y) % 4]
+                // (0,0)=red
+                // (0,1)=black
+                // (1,0)=green
+                // (1,1)=blue
+
+                let gridX = BOX_WIDTH * cell.x;
+                let gridY = BOX_WIDTH * cell.y;
+
                 switch (d) {
                     /*
                           U               L
                         L + R  becomes  U + D because reflection across y=x
                           D               R
                     */
-                    case Direction.LEFT: // UP
-                        gridY += offset;
+                    case Direction.LEFT: // screen UP
+                        gridX += BAR_WIDTH / 2;
+                        gridY += BAR_WIDTH;
                         this.canvas.moveTo(gridX, gridY - start);
                         this.canvas.lineTo(gridX, gridY - start - drawDistance);
                         break;
-                    case Direction.RIGHT: // DOWN
-                        gridY -= offset;
+                    case Direction.RIGHT: // screen DOWN
+                        gridX += BAR_WIDTH / 2;
+                        gridY += 0;
                         this.canvas.moveTo(gridX, gridY + start);
                         this.canvas.lineTo(gridX, gridY + start + drawDistance);
                         break;
-                    case Direction.UP: // LEFT
-                        gridX += offset;
+                    case Direction.UP: // screen LEFT
+                        gridX += BAR_WIDTH
+                        gridY += BAR_WIDTH / 2;
                         this.canvas.moveTo(gridX - start, gridY);
                         this.canvas.lineTo(gridX - start - drawDistance, gridY);
                         break;
-                    case Direction.DOWN: // RIGHT
-                        gridX -= offset;
+                    case Direction.DOWN: // screen RIGHT
+                        gridX += 0;
+                        gridY += BAR_WIDTH / 2;
                         this.canvas.moveTo(gridX + start, gridY);
                         this.canvas.lineTo(gridX + start + drawDistance, gridY);
                         break;
                 }
+                this.canvas.stroke();
+
+                console.log(cell.x,cell.y,'outofbounds?', outofbounds, Direction[d], gridX, gridY, drawDistance);
             });
         }
 
