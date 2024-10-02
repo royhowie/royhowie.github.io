@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const dimensions = document.body.getBoundingClientRect();
     const canvas = document.createElement('canvas');
 
-    const height = dimensions.height + 10;
-    const width = dimensions.width + 10;
+    const height = dimensions.height - 30;
+    const width = dimensions.width - 30;
 
     document.body.appendChild(canvas);
     canvas.height = height;
@@ -32,11 +32,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Grid uses (x,y) for (rows,cols), i.e. (vert, horiz) distance
     // but Canvas uses (x,y) for (horiz, vert) distance, so swap em
     const context = new GridContext(
-        5,8
-        // Math.ceil(width / BOX_WIDTH), Math.ceil(height / BOX_WIDTH),
+        Math.floor(width / BOX_WIDTH),
+        Math.floor(height / BOX_WIDTH),
     );
-    const grid = new BfsFill(context).newGrid();
-    // const grid = new RecursiveDivide(context).newGrid();
+    // const grid = new BfsFill(context).newGrid();
+    const grid = new RecursiveDivide(context).newGrid();
     const strategy = getStrategy();
     const painter = new Painter(ctx);
     const steps = strategy.generate(grid, context);

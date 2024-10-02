@@ -99,34 +99,58 @@ export class RecursiveDivide implements GridWalker {
     }
 
     divide(grid: Grid, x: number, y: number, limitX: number, limitY: number): void {
-        if (limitX - x <= 1 || limitY - y <= 1) return;
+        if (limitX === x + 1) {
+            console.log(`A: ${x}-${limitX} ::: ${y}-${limitY}`)
+            for (let i = y; i < limitY - 1; i++) {
+                grid.get(x, i)!.walkTo(Direction.RIGHT, grid.get(x, i+1)!)
+            }
+            return;
+        } else if (limitY === y + 1) {
+            console.log(`B: ${x}-${limitX} ::: ${y}-${limitY}`)
+            for (let i = x; i < limitX - 1; i++) {
+                grid.get(i, y)!.walkTo(Direction.DOWN, grid.get(i + 1, y)!)
+            }
+            return;
+        }
 
-        if (limitY < limitX) { // horizontal division
+        const randomBit = window.crypto.getRandomValues(new Uint8Array(1))[0];
+
+        if (randomBit % 2 === 0) { // horizontal division
             const row = this.random(x+1, limitX);
-            const col = this.random(y, limitY - 1);
+            const col = this.random(y, limitY);
             console.log(`[horizontal]: picked (${row},${col}) from ${x}-${limitX} & ${y}-${limitY}`)
 
-            for (let i = y; i < limitY - 1; i++) {
-                grid.get(row-1, i)!.walkTo(Direction.RIGHT, grid.get(row-1, i+1)!)
-                grid.get(row, i)!.walkTo(Direction.RIGHT, grid.get(row, i+1)!)
-            }
             grid.get(row-1, col)!.walkTo(Direction.DOWN, grid.get(row, col)!)
 
             this.divide(grid, x, y, row, limitY);
             this.divide(grid, row, y, limitX, limitY);
+
+            // fill in anything that isn't a vertical partition
+            for (let i = y; i < limitY - 1; i++) {
+                const start = grid.get(row-1, i)!;
+                const end = grid.get(row-1, i+1)!;
+                if (end.paths.size == 0) {
+                    start.walkTo(Direction.RIGHT, end);
+                }
+            }
         } else { // vertical division
             const row = this.random(x, limitX);
-            const col = this.random(y+1, limitY - 1);
+            const col = this.random(y+1, limitY);
             console.log(`[horizontal]: picked (${row},${col}) from ${x}-${limitX} & ${y}-${limitY}`)
 
-            for (let i = x; i < limitX - 1; i++) {
-                grid.get(i, col-1)!.walkTo(Direction.DOWN, grid.get(i+1, col-1)!)
-                grid.get(i, col)!.walkTo(Direction.DOWN, grid.get(i+1, col)!)
-            }
             grid.get(row, col-1)!.walkTo(Direction.RIGHT, grid.get(row, col)!)
 
             this.divide(grid, x, y, limitX, col);
             this.divide(grid, x, col, limitX, limitY);
+
+            // fill in anything that isn't a vertical partition
+            for (let i = x; i < limitX - 1; i++) {
+                const start = grid.get(i, col-1)!;
+                const end = grid.get(i+1, col-1)!;
+                if (end.paths.size == 0) {
+                    start.walkTo(Direction.DOWN, end);
+                }
+            }
         }
     }
 
