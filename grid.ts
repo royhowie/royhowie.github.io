@@ -100,13 +100,11 @@ export class RecursiveDivide implements GridWalker {
 
     divide(grid: Grid, x: number, y: number, limitX: number, limitY: number): void {
         if (limitX === x + 1) {
-            console.log(`A: ${x}-${limitX} ::: ${y}-${limitY}`)
             for (let i = y; i < limitY - 1; i++) {
                 grid.get(x, i)!.walkTo(Direction.RIGHT, grid.get(x, i+1)!)
             }
             return;
         } else if (limitY === y + 1) {
-            console.log(`B: ${x}-${limitX} ::: ${y}-${limitY}`)
             for (let i = x; i < limitX - 1; i++) {
                 grid.get(i, y)!.walkTo(Direction.DOWN, grid.get(i + 1, y)!)
             }
@@ -118,7 +116,6 @@ export class RecursiveDivide implements GridWalker {
         if (randomBit % 2 === 0) { // horizontal division
             const row = this.random(x+1, limitX);
             const col = this.random(y, limitY);
-            console.log(`[horizontal]: picked (${row},${col}) from ${x}-${limitX} & ${y}-${limitY}`)
 
             grid.get(row-1, col)!.walkTo(Direction.DOWN, grid.get(row, col)!)
 
@@ -136,7 +133,6 @@ export class RecursiveDivide implements GridWalker {
         } else { // vertical division
             const row = this.random(x, limitX);
             const col = this.random(y+1, limitY);
-            console.log(`[horizontal]: picked (${row},${col}) from ${x}-${limitX} & ${y}-${limitY}`)
 
             grid.get(row, col-1)!.walkTo(Direction.RIGHT, grid.get(row, col)!)
 

@@ -151,7 +151,7 @@ export class Painter {
         for (const [cell, directions] of step.strokes) {
             directions.forEach(d => {
                 const outofbounds = this.outOfBoundsDraw(cell.x, cell.y, d, ctx);
-                const distance = outofbounds ? BAR_WIDTH : BOX_WIDTH
+                const distance = 1 + (outofbounds ? BAR_WIDTH : BOX_WIDTH)
                 const start = distance * (n-1) / Painter.STEPS;
                 const drawDistance = distance / Painter.STEPS;
 
@@ -198,8 +198,6 @@ export class Painter {
                         break;
                 }
                 this.canvas.stroke();
-
-                console.log(cell.x,cell.y,'outofbounds?', outofbounds, Direction[d], gridX, gridY, drawDistance);
             });
         }
 

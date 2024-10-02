@@ -35,8 +35,9 @@ document.addEventListener('DOMContentLoaded', function () {
         Math.floor(width / BOX_WIDTH),
         Math.floor(height / BOX_WIDTH),
     );
-    // const grid = new BfsFill(context).newGrid();
-    const grid = new RecursiveDivide(context).newGrid();
+    const grid = Math.random() < 0.5 ?
+        new BfsFill(context).newGrid()
+        : new RecursiveDivide(context).newGrid();
     const strategy = getStrategy();
     const painter = new Painter(ctx);
     const steps = strategy.generate(grid, context);
@@ -52,8 +53,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function getStrategy(): PaintStrategy {
     const strategies = [
-        // new BfsWalk(),
-        // new RandomWalk(50),
+        new BfsWalk(),
+        new RandomWalk(50),
         new WaveStrategy(true, false),
         // new WaveStrategy(true, true),
     ];
