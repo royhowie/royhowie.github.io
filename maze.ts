@@ -1,4 +1,4 @@
-import { BfsFill, GridContext } from './grid'
+import { BfsFill, GridContext, RecursiveDivide } from './grid'
 import { BAR_COLOR, BAR_WIDTH, BOX_WIDTH, BfsWalk, RandomWalk, Painter, PaintStrategy, PAINT_OFFSET, WaveStrategy } from './painting';
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
     canvas.height *= pixelRatio;
 
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    ctx.translate(PAINT_OFFSET, PAINT_OFFSET);
+    // ctx.translate(PAINT_OFFSET, PAINT_OFFSET);
 
     ctx.strokeStyle = BAR_COLOR;
     ctx.lineWidth = BAR_WIDTH;
@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
         Math.ceil(width / BOX_WIDTH),
     )
     const grid = new BfsFill(context).newGrid();
+    // const grid = new RecursiveDivide(context).newGrid();
     const strategy = getStrategy();
     const painter = new Painter(ctx);
     const steps = strategy.generate(grid, context);
@@ -51,10 +52,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function getStrategy(): PaintStrategy {
     const strategies = [
-        new BfsWalk(),
-        new RandomWalk(50),
+        // new BfsWalk(),
+        // new RandomWalk(50),
         new WaveStrategy(true, false),
-        new WaveStrategy(true, true),
+        // new WaveStrategy(true, true),
     ];
     return strategies[(strategies.length * Math.random()) | 0]
 }

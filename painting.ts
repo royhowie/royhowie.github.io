@@ -1,9 +1,9 @@
 import { Cell, Direction, Grid, GridContext} from './grid'
 
 export const BAR_COLOR = '#4682b4'
-export const GAP = 4;
+export const GAP = 2;
 export const BAR_WIDTH = 32;
-export const BOX_WIDTH = GAP + BAR_WIDTH;
+export const BOX_WIDTH = 2 * GAP + BAR_WIDTH;
 export const PAINT_OFFSET = (BOX_WIDTH / 2) | 0;
 
 export class Step {
@@ -124,7 +124,6 @@ export class RandomWalk implements PaintStrategy {
     }
 }
 
-const DRAW_DISTANCE = GAP + BAR_WIDTH * 1.5
 export class Painter {
 
     private static STEPS: number = 1;
@@ -132,42 +131,58 @@ export class Painter {
     constructor(private readonly canvas: CanvasRenderingContext2D) {}
 
     paint(step: Step, grid: Grid, ctx: GridContext, done: () => void): void {
-        window.requestAnimationFrame(() => this.drawFrame(1, step, done));
+        window.requestAnimationFrame(() => this.drawFrame(1, ctx, step, done));
     }
 
-    private drawFrame(n: number, step: Step, done: () => void): void {
+    private outOfBoundsDraw(x: number, y: number, d: Direction, ctx: GridContext): boolean {
+        return (x === 0 && d === Direction.LEFT)
+            || (x === ctx.rows-1 && d === Direction.RIGHT)
+            || (y === 0 && d === Direction.UP)
+            || (y === ctx.cols-1 && d === Direction.DOWN);
+    }
+
+    private drawFrame(n: number, ctx: GridContext, step: Step, done: () => void): void {
         if (n > Painter.STEPS) {
             return done();
         }
 
-        const start = ((n-1)/Painter.STEPS) * DRAW_DISTANCE;
-        const drawDistance = DRAW_DISTANCE / Painter.STEPS;
-
         for (const [cell, directions] of step.strokes) {
-            let gridX = BOX_WIDTH * cell.y;
-            let gridY = BOX_WIDTH * cell.x;
-
-            // draw extra for the first cell bc nothing else draws into it
-            if (cell.x === 0 && cell.y === 0) {
-                this.canvas.moveTo((GAP/2)-PAINT_OFFSET, 0);
-                this.canvas.lineTo(0, 0);
-            }
-
             directions.forEach(d => {
+                // 
+                const distance = this.outOfBoundsDraw(cell.x, cell.y, d, ctx)
+                        ? BAR_WIDTH
+                        : BOX_WIDTH * 1.5;
+                let start = distance * (n-1) / Painter.STEPS;
+                let drawDistance = distance / Painter.STEPS;
+
+                // find the coords of the (y,x) box then shift to the middle
+                let gridX = BOX_WIDTH * cell.y + BOX_WIDTH / 2;
+                let gridY = BOX_WIDTH * cell.x + BOX_WIDTH / 2;
+
+                const offset = BAR_WIDTH/2;
                 switch (d) {
-                    case Direction.UP:
+                    /*
+                          U               L
+                        L + R  becomes  U + D because reflection across y=x
+                          D               R
+                    */
+                    case Direction.LEFT: // UP
+                        gridY += offset;
                         this.canvas.moveTo(gridX, gridY - start);
                         this.canvas.lineTo(gridX, gridY - start - drawDistance);
                         break;
-                    case Direction.DOWN:
+                    case Direction.RIGHT: // DOWN
+                        gridY -= offset;
                         this.canvas.moveTo(gridX, gridY + start);
                         this.canvas.lineTo(gridX, gridY + start + drawDistance);
                         break;
-                    case Direction.LEFT:
+                    case Direction.UP: // LEFT
+                        gridX += offset;
                         this.canvas.moveTo(gridX - start, gridY);
                         this.canvas.lineTo(gridX - start - drawDistance, gridY);
                         break;
-                    case Direction.RIGHT:
+                    case Direction.DOWN: // RIGHT
+                        gridX -= offset;
                         this.canvas.moveTo(gridX + start, gridY);
                         this.canvas.lineTo(gridX + start + drawDistance, gridY);
                         break;
@@ -176,6 +191,6 @@ export class Painter {
         }
 
         this.canvas.stroke();
-        window.requestAnimationFrame(() => this.drawFrame(n+1, step, done));
+        window.requestAnimationFrame(() => this.drawFrame(n+1, ctx, step, done));
     }
 }
