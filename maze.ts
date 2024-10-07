@@ -1,4 +1,4 @@
-import { DfsFill, GridContext, RecursiveDivide } from './grid'
+import { DfsFill, Ellers, GridContext, GridWalker, RecursiveDivide } from './grid'
 import { BAR_COLOR, BAR_WIDTH, BOX_WIDTH, BfsWalk, RandomWalk, Painter, PaintStrategy, PAINT_OFFSET, WaveStrategy, GAP } from './painting';
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -27,9 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     console.log('starting generation');
     const context = new GridContext(rows, cols);
-    const grid = Math.random() < 0.5 ?
-        new DfsFill(context).newGrid()
-        : new RecursiveDivide(context).newGrid();
+    const grid = getGenerator(context).newGrid();
     const strategy = getStrategy();
     const painter = new Painter(ctx);
     const steps = strategy.generate(grid, context);
@@ -43,6 +41,15 @@ document.addEventListener('DOMContentLoaded', function () {
     walkStep(0, () => console.log('done painting!', dimensions, grid));
 });
 
+function getGenerator(context: GridContext): GridWalker {
+    const walkers = [
+        new DfsFill(context),
+        new Ellers(context),
+        new RecursiveDivide(context),
+    ];
+    return walkers[(walkers.length * Math.random()) | 0];
+}
+
 function getStrategy(): PaintStrategy {
     const strategies = [
         new BfsWalk(),
@@ -50,5 +57,5 @@ function getStrategy(): PaintStrategy {
         new WaveStrategy(true, false),
         new WaveStrategy(true, true),
     ];
-    return strategies[(strategies.length * Math.random()) | 0]
+    return strategies[(strategies.length * Math.random()) | 0];
 }

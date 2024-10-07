@@ -1,3 +1,5 @@
+import { start } from "repl";
+
 export enum Direction {
     UP = 1,
     RIGHT = 2,
@@ -52,7 +54,7 @@ export class Grid {
 }
 
 export interface GridWalker {
-    newGrid(ctx: GridContext): Grid;
+    newGrid(): Grid;
 }
 
 export class DfsFill implements GridWalker {
@@ -88,6 +90,54 @@ export class DfsFill implements GridWalker {
     }
 }
 
+export class Ellers implements GridWalker {
+
+    constructor(private readonly ctx: GridContext) {}
+
+    newGrid(): Grid {
+        const grid = new Grid(this.ctx);
+        for (let i = 0; i < this.ctx.rows - 1; i++) {
+            this.join(grid, i);
+            this.descend(grid, i);
+        }
+        for (let j = 0; j < this.ctx.cols - 1; j++) {
+            this.connectColumn(grid, this.ctx.rows - 1, j);
+        }
+        return grid;
+    }
+
+    private descend(grid: Grid, row: number): void {
+        for (let j = 0; j < this.ctx.cols; j++) {
+            let endOfGroup = j;
+            let rightmostNeighbor = grid.get(row, j);
+
+            while (rightmostNeighbor = rightmostNeighbor?.paths.get(Direction.RIGHT)) {
+                endOfGroup = rightmostNeighbor.y;
+            }
+
+            const connection = random(j, endOfGroup + 1);
+            grid.get(row, connection)!.walkTo(Direction.DOWN, grid.get(row + 1, connection)!);
+            j = endOfGroup;
+        }
+    }
+
+    private join(grid: Grid, row: number): void {
+        for (let j = 0; j < this.ctx.cols - 1; j++) {
+            if (random(0, 2) === 0) {
+                this.connectColumn(grid, row, j);
+            }
+        }
+    }
+
+    private connectColumn(grid: Grid, row: number, startCol: number): void {
+        grid.get(row, startCol)!.walkTo(Direction.RIGHT, grid.get(row, startCol+1)!)
+    }
+}
+
+function random(start: number, stopExclusive: number): number {
+    return start + window.crypto.getRandomValues(new Uint8Array(1))[0] % (stopExclusive - start);
+}
+
 export class RecursiveDivide implements GridWalker {
 
     constructor(private readonly ctx: GridContext) {}
@@ -98,7 +148,7 @@ export class RecursiveDivide implements GridWalker {
         return grid;
     }
 
-    divide(grid: Grid, x: number, y: number, limitX: number, limitY: number): void {
+    private divide(grid: Grid, x: number, y: number, limitX: number, limitY: number): void {
         if (limitX === x + 1) {
             for (let i = y; i < limitY - 1; i++) {
                 grid.get(x, i)!.walkTo(Direction.RIGHT, grid.get(x, i+1)!)
