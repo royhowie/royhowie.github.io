@@ -55,7 +55,7 @@ export interface GridWalker {
     newGrid(ctx: GridContext): Grid;
 }
 
-export class BfsFill implements GridWalker {
+export class DfsFill implements GridWalker {
 
     constructor(private readonly ctx: GridContext) {}
 

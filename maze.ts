@@ -1,4 +1,4 @@
-import { BfsFill, GridContext, RecursiveDivide } from './grid'
+import { DfsFill, GridContext, RecursiveDivide } from './grid'
 import { BAR_COLOR, BAR_WIDTH, BOX_WIDTH, BfsWalk, RandomWalk, Painter, PaintStrategy, PAINT_OFFSET, WaveStrategy, GAP } from './painting';
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
         Math.floor(height / BOX_WIDTH),
     );
     const grid = Math.random() < 0.5 ?
-        new BfsFill(context).newGrid()
+        new DfsFill(context).newGrid()
         : new RecursiveDivide(context).newGrid();
     const strategy = getStrategy();
     const painter = new Painter(ctx);
