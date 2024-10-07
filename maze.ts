@@ -4,37 +4,29 @@ import { BAR_COLOR, BAR_WIDTH, BOX_WIDTH, BfsWalk, RandomWalk, Painter, PaintStr
 document.addEventListener('DOMContentLoaded', function () {
     const dimensions = document.body.getBoundingClientRect();
     const canvas = document.createElement('canvas');
+    const pixelRatio = window.devicePixelRatio || 1;
 
-    const height = dimensions.height - 30;
-    const width = dimensions.width - 30;
+    const height = dimensions.height - GAP;
+    const width = dimensions.width - GAP;
+
+    const rows = Math.floor(width / BOX_WIDTH);
+    const cols = Math.floor(height / BOX_WIDTH);
+
+    const unscaledWidth = rows * BOX_WIDTH;
+    const unscaledHeight = cols * BOX_WIDTH;
 
     document.body.appendChild(canvas);
-    canvas.height = height;
-    canvas.width = width;
-    canvas.id = 'canvas';
+    canvas.height = pixelRatio * height;
+    canvas.width = pixelRatio * width;
 
     const ctx = canvas.getContext('2d')!;
-
-    var pixelRatio = window.devicePixelRatio || 1;
-
-    canvas.style.width = canvas.width + 'px';
-    canvas.style.height = canvas.height + 'px';
-    canvas.width *= pixelRatio;
-    canvas.height *= pixelRatio;
-
-    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    ctx.translate(GAP, GAP);
+    ctx.setTransform(width / unscaledWidth, 0, 0, height / unscaledHeight, GAP, GAP);
 
     ctx.strokeStyle = BAR_COLOR;
     ctx.lineWidth = BAR_WIDTH;
 
-    console.log('starting generation')
-    // Grid uses (x,y) for (rows,cols), i.e. (vert, horiz) distance
-    // but Canvas uses (x,y) for (horiz, vert) distance, so swap em
-    const context = new GridContext(
-        Math.floor(width / BOX_WIDTH),
-        Math.floor(height / BOX_WIDTH),
-    );
+    console.log('starting generation');
+    const context = new GridContext(rows, cols);
     const grid = Math.random() < 0.5 ?
         new DfsFill(context).newGrid()
         : new RecursiveDivide(context).newGrid();
@@ -56,7 +48,7 @@ function getStrategy(): PaintStrategy {
         new BfsWalk(),
         new RandomWalk(50),
         new WaveStrategy(true, false),
-        // new WaveStrategy(true, true),
+        new WaveStrategy(true, true),
     ];
     return strategies[(strategies.length * Math.random()) | 0]
 }
