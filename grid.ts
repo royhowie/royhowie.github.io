@@ -1,4 +1,4 @@
-import { start } from "repl";
+import { random } from './helpers'
 
 export enum Direction {
     UP = 1,
@@ -83,7 +83,7 @@ export class DfsFill implements GridWalker {
             if (!options.length) {
                 break;
             }
-            const [nextCell, direction] = options[(Math.random() * options.length) | 0];
+            const [nextCell, direction] = options[random(0, options.length)];
             cell.walkTo(direction, nextCell);
             this.step(nextCell, grid);
         };
@@ -134,10 +134,6 @@ export class Ellers implements GridWalker {
     }
 }
 
-function random(start: number, stopExclusive: number): number {
-    return start + window.crypto.getRandomValues(new Uint8Array(1))[0] % (stopExclusive - start);
-}
-
 export class RecursiveDivide implements GridWalker {
 
     constructor(private readonly ctx: GridContext) {}
@@ -164,8 +160,8 @@ export class RecursiveDivide implements GridWalker {
         const randomBit = window.crypto.getRandomValues(new Uint8Array(1))[0];
 
         if (randomBit % 2 === 0) { // horizontal division
-            const row = this.random(x+1, limitX);
-            const col = this.random(y, limitY);
+            const row = random(x+1, limitX);
+            const col = random(y, limitY);
 
             grid.get(row-1, col)!.walkTo(Direction.DOWN, grid.get(row, col)!)
 
@@ -181,8 +177,8 @@ export class RecursiveDivide implements GridWalker {
                 }
             }
         } else { // vertical division
-            const row = this.random(x, limitX);
-            const col = this.random(y+1, limitY);
+            const row = random(x, limitX);
+            const col = random(y+1, limitY);
 
             grid.get(row, col-1)!.walkTo(Direction.RIGHT, grid.get(row, col)!)
 
@@ -198,9 +194,5 @@ export class RecursiveDivide implements GridWalker {
                 }
             }
         }
-    }
-
-    private random(start: number, stopExclusive: number): number {
-        return start + Math.floor((stopExclusive - start) * Math.random());
     }
 }

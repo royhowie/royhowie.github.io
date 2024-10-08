@@ -1,4 +1,5 @@
 import { Cell, Direction, Grid, GridContext} from './grid'
+import { random } from './helpers'
 
 export const BAR_COLOR = '#4682b4'
 export const GAP = 2;
@@ -116,10 +117,84 @@ export class RandomWalk implements PaintStrategy {
 
     private static shuffle(arr: any[]): void {
         for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
+            const j = random(0, i+1);
             const temp = arr[i];
             arr[i] = arr[j];
             arr[j] = temp;
+        }
+    }
+}
+
+export class Spiraled implements PaintStrategy {
+
+    constructor(
+        private readonly centers: number,
+        private readonly zip: boolean) {}
+
+    generate(grid: Grid, ctx: GridContext): Step[] {
+        const tuples: [number, number][] = Array.from({ length: this.centers }, () => [random(0, ctx.rows), random(0, ctx.cols)]);
+
+        const steps: Step[] = [];
+        let r = 0;
+        const visited: Set<Cell> = new Set();
+
+        while (visited.size < ctx.rows * ctx.cols) {
+            const up: Step[] = [], right: Step[] = [], down: Step[] = [], left: Step[] = [];
+            for (let i = 0; i < tuples.length; i++) {
+                const [x, y] = tuples[i];
+                if (r == 0) {
+                    this.appendTo(up, this.walkDirection(grid, visited, x, y + r, Direction.UP, 1));
+                } else {
+                    this.appendTo(up, this.walkDirection(grid, visited, x, y + r, Direction.UP, r));
+                    this.appendTo(right, this.walkDirection(grid, visited, x - r, y, Direction.RIGHT, r));
+                    this.appendTo(down, this.walkDirection(grid, visited, x, y - r, Direction.DOWN, r));
+                    this.appendTo(left, this.walkDirection(grid, visited, x + r, y, Direction.LEFT, r));
+                }
+            }
+            steps.push(...up, ...right, ...down, ...left);
+            r++;
+        }
+        return steps;
+    }
+
+    private appendTo(steps: Step[], nextSteps: Step[]): void {
+        if (this.zip && steps.length) {
+            const split = Math.min(steps.length, nextSteps.length);
+            for (let i = 0; i < split; i++) {
+                nextSteps[i].strokes.forEach((v, k) => {
+                    steps[i].strokes.set(k, v);
+                })
+            }
+            for (let j = split; j < nextSteps.length; j++) {
+                steps.push(nextSteps[j]);
+            }
+        } else {
+            steps.push(...nextSteps)
+        }
+    }
+
+    private walkDirection(grid: Grid, visited: Set<Cell>, x: number, y: number, direction: Direction, radius: number): Step[] {
+        const tuple = this.tuple(direction);
+        const steps: Step[] = [];
+        for (let step = 0; step < radius; step++) {
+            const cell = grid.get(x + tuple[0] * step, y + tuple[1] * step);
+            if (cell && !visited.has(cell)) {
+                visited.add(cell);
+                const m = new Map()
+                m.set(cell, new Set(cell.paths.keys()));
+                steps.push(new Step(m));
+            }
+        }
+        return steps;
+    }
+
+    private tuple(direction: Direction): [number, number] {
+        // assuming clockwise direction
+        switch (direction) {
+            case Direction.UP:     return [-1, -1];  // walk NW
+            case Direction.RIGHT:  return [ 1, -1];  // walk NE
+            case Direction.DOWN:   return [ 1,  1];  // walk SE
+            case Direction.LEFT:   return [-1,  1];  // walk SW
         }
     }
 }
@@ -155,12 +230,6 @@ export class Painter {
                 const drawDistance = distance / Painter.STEPS;
 
                 this.canvas.beginPath();
-
-                // this.canvas.strokeStyle = ['red', 'black', 'green', 'blue'][(cell.x * 2 + cell.y) % 4]
-                // (0,0)=red
-                // (0,1)=black
-                // (1,0)=green
-                // (1,1)=blue
 
                 let gridX = BOX_WIDTH * cell.x;
                 let gridY = BOX_WIDTH * cell.y;
