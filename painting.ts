@@ -85,6 +85,28 @@ export class BfsWalk implements PaintStrategy {
     }
 }
 
+export class LinearWalk implements PaintStrategy {
+    constructor(private readonly glompingFactor: number) {}
+
+    generate(grid: Grid, ctx: GridContext): Step[] {
+        const steps: Step[] = [];
+        for (let i = 0; i < ctx.cols; i++) {
+            for (let j = 0; j < Math.max(1, ctx.rows / this.glompingFactor); j++) {
+                const nextStep = new Step(new Map());
+                for (let k = 0; k < this.glompingFactor; k++) {
+                    const cell = grid.get(j * this.glompingFactor + k, i);
+                    if (cell) {
+                        nextStep.strokes.set(cell, new Set(cell.paths.keys()));
+                    }
+                }
+                steps.push(nextStep);
+            }
+        }
+
+        return steps;
+    }
+}
+
 export class RandomWalk implements PaintStrategy {
 
     constructor(private readonly concurrentCells: number) {}
