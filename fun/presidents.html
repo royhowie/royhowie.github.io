@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Guess Your Presidents</title>
+</head>
+  <style>
+    div {
+      display: inline-block;
+      position: relative;
+    }
+    img {
+      height: 310px;
+      margin-top: 45px;
+      width: 220px;
+    }
+    p.answer {
+      left: 0;
+      position: absolute;
+      text-align: center;
+      top: 0;
+      width: 220px;
+      z-index: 5000;
+    }
+    img:hover + p.answer {
+      display: inline-block;
+    }
+  </style>
+<body>
+  <h1>Guess the president</h1>
+  <h2 id="result"></h2>
+  <h3 id="who">Who was president #<span id="number">1</span>?</h3>
+  <div>
+    <img id="0">
+    <p class="answer" id="a0"></p>
+  </div>
+  <div>
+    <img id="1">
+    <p class="answer" id="a1"></p>
+  </div>
+  <div>
+    <img id="2">
+    <p class="answer" id="a2"></p>
+  </div>
+  <div>
+    <img id="3">
+    <p class="answer" id="a3"></p>
+  </div>
+<script>
+  var number = document.getElementById("number"),
+    result = document.getElementById("result"),
+    who = document.getElementById("who"),
+    presidents = [
+      "George Washington", "John Adams", "Thomas Jefferson", "James Madison", "James Monroe",
+      "John Quincy Adams", "Andrew Jackson", "Martin Van Buren", "William Henry Harrison",
+      "John Tyler", "James K. Polk", "Zachary Taylor", "Millard Fillmore", "Franklin Pierce",
+      "James Buchanan", "Abraham Lincoln", "Andrew Johnson", "Ulysses S. Grant", "Rutherford B. Hayes",
+      "James A. Garfield", "Chester A. Arthur", "Grover Cleveland", "Benjamin Harrison",
+      "Grover Cleveland", "William McKinley", "Theodore Roosevelt", "William Howard Taft",
+      "Woodrow Wilson", "Warren G. Harding", "Calvin Coolidge", "Herbert Hoover", "Franklin D. Roosevelt",
+      "Harry S. Truman", "Dwight D. Eisenhower", "John F. Kennedy", "Lyndon B. Johnson", "Richard Nixon",
+      "Gerald Ford", "Jimmy Carter", "Ronald Reagan", "George H. W. Bush", "Bill Clinton", "George W. Bush",
+      "Barack Obama" ];
+
+  var shuffle = function (array) {
+    var currentIndex = array.length, temporaryValue, randomIndex ;
+    while (0 !== currentIndex) {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+    return array;
+  }
+
+  var pickPresident = 0, current = [], canGo = true,
+    seen = [];
+
+  var checkResult = function () {
+    if (!canGo) return;
+    else canGo = false;
+
+    var t = this, p = parseInt(this.id);
+
+    who.style.display = "none";
+
+    if (current[p] == pickPresident) {
+      result.innerHTML = "CORRECT! " + presidents[pickPresident] + " was #" + (pickPresident + 1);
+      this.parentNode.style["background-color"] = "green";
+    } else {
+      result.innerHTML = "Sorry, " + presidents[current[p]] + " was not #" +
+        (pickPresident + 1) + ", " + presidents[pickPresident] + " was.";
+      this.parentNode.style["background-color"] = "red";
+    }
+    setTimeout(function () {
+      canGo = true;
+      result.innerHTML = "";
+      t.parentNode.style["background-color"] = "white";
+      who.style.display = "block";
+      reset();
+    }, current[p] == pickPresident ? 1500 : 3500);  // wrong answers require more time to process!
+  }
+
+  var reset = function () {
+    if (seen.length >= (presidents.length >> 1)) {
+      seen = [];
+    }
+
+    pickPresident = (Math.random() * presidents.length) | 0;
+    while (seen.indexOf(pickPresident) > -1) {
+      pickPresident = (Math.random() * presidents.length) | 0;
+    }
+    seen.push(pickPresident);
+    number.innerHTML = pickPresident + 1;
+
+    current = [pickPresident];
+    for (var i = 0; i < 3; i++) {
+      var r = (Math.random() * presidents.length) | 0;
+      while (current.indexOf(r) > -1) {
+        r = (Math.random() * presidents.length) | 0;
+      }
+      current.push(r);
+    }
+    // current = shuffle(current);
+    shuffle(current).forEach(function (d, i) {
+      document.getElementById(i).src = "presidents/" + (d + 1) + ".jpg";
+      document.getElementById("a" + i).innerHTML = presidents[d];
+      console.log(d + " is " + presidents[d]);
+    })
+  }
+
+  reset();
+
+  document.getElementById("0").onclick = checkResult;
+  document.getElementById("1").onclick = checkResult;
+  document.getElementById("2").onclick = checkResult;
+  document.getElementById("3").onclick = checkResult;
+</script>
+</body>
+</html>
