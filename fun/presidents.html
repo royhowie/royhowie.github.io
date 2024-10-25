@@ -123,7 +123,7 @@
     }
     // current = shuffle(current);
     shuffle(current).forEach(function (d, i) {
-      document.getElementById(i).src = "presidents/" + (d + 1) + ".jpg";
+      document.getElementById(i).src = "../img/presidents/" + (d + 1) + ".jpg";
       document.getElementById("a" + i).innerHTML = presidents[d];
       console.log(d + " is " + presidents[d]);
     })
