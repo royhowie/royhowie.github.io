@@ -1,5 +1,5 @@
 import { DfsFill, Ellers, GridContext, GridWalker, RecursiveDivide } from './grid'
-import { BAR_COLOR, BAR_WIDTH, BOX_WIDTH, BfsWalk, LinearWalk, RandomWalk, Painter, PaintStrategy, PAINT_OFFSET, WaveStrategy, GAP, Spiraled } from './painting';
+import { BAR_COLOR, BAR_WIDTH, BOX_WIDTH, BfsWalk, LinearWalk, RandomWalk, Painter, PaintStrategy, WaveStrategy, GAP, Spiraled } from './painting';
 
 document.addEventListener('DOMContentLoaded', function () {
     const dimensions = document.body.getBoundingClientRect();
