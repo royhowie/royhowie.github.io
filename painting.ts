@@ -114,24 +114,20 @@ export class RandomWalk implements PaintStrategy {
     generate(grid: Grid, ctx: GridContext): Step[] {
         const steps: Step[] = [];
 
-        const ordered: Cell[] = []
-        for (let x = 0; x < ctx.rows; x++) {
-            for (let y = 0; y < ctx.cols; y++) {
-                ordered.push(grid.get(x, y)!)
-            }
-        }
-
-        RandomWalk.shuffle(ordered);
+        const indices = Array.from({ length: ctx.rows * ctx.cols })
+            .map((v, i) => [Math.floor(i / ctx.cols), i % ctx.cols])
+        RandomWalk.shuffle(indices)
 
         let i = 0;
-        while (i < ordered.length) {
+        while (i < indices.length) {
             const m: Map<Cell, Set<Direction>> = new Map();
-            for (let j = 0; j < this.concurrentCells && i + j < ordered.length; j++) {
-                const cell = ordered[i + j];
+            for (let j = 0; j < this.concurrentCells && i + j < indices.length; j++) {
+                const [x,y] = indices[i + j]
+                const cell = grid.get(x, y)!;
                 m.set(cell, new Set(cell.paths.keys()));
             }
             steps.push(new Step(m));
-            i += this.concurrentCells;
+            i += m.size
         }
 
         return steps;
